@@ -6,9 +6,29 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Day Tracker</title>
     <style>
+        :root {
+            --bg-color: #fff;
+            --text-color: #000;
+            --progress-bg: #f3f3f3;
+            --progress-color: #4caf50;
+            --config-bg: #fff;
+            --config-text: #000;
+        }
+
+        :root.dark-mode {
+            --bg-color: #1e1e1e;
+            --text-color: #fff;
+            --progress-bg: #333;
+            --progress-color: #6ca6cd;
+            --config-bg: #333;
+            --config-text: #fff;
+        }
+
         body {
             font-family: monospace;
             text-align: center;
+            background-color: var(--bg-color);
+            color: var(--text-color);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -17,7 +37,7 @@
         }
 
         #current-time {
-            font-size: 80px;
+            font-size: 48px;
             margin: 20px 0;
         }
 
@@ -29,7 +49,7 @@
 
         .block-progress-bar {
             height: 30px;
-            background-color: #f3f3f3;
+            background-color: var(--progress-bg);
             border: 1px solid #ccc;
             position: relative;
             flex-grow: 1;
@@ -40,7 +60,7 @@
 
         .block-progress-bar .progress {
             height: 100%;
-            background-color: #4caf50;
+            background-color: var(--progress-color);
         }
 
         .block-progress-bar .percentage {
@@ -50,32 +70,61 @@
             font-size: 16px;
         }
 
+        .block-info {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        .block-info > div {
+            margin: 0 10px;
+        }
+
+        .block-info.hidden {
+            display: none;
+        }
 
         #config {
             margin: 20px;
+            display: none;
+        }
+
+        #config.show {
+            display: block;
         }
 
         #config input {
             width: 80%;
             padding: 10px;
             font-size: 16px;
+            background-color: var(--config-bg);
+            color: var(--config-text);
         }
 
-        .block-info {
+        .top-buttons {
+            position: absolute;
+            top: 10px;
+            right: 10px;
             display: flex;
-            justify-content: center;
-            margin: 10px 0;
-        }
-        .block-info > div {
-            margin: 0 10px;
-        }
-        .block-info.hidden {
-            display: none;
+            gap: 10px;
         }
 
+        #toggle-mode,
+        #config-button {
+            padding: 5px 10px;
+            font-size: 14px;
+            background-color: var(--progress-bg);
+            color: var(--text-color);
+            border: none;
+            cursor: pointer;
+        }
     </style>
 </head>
 <body>
+    <div class="top-buttons">
+        <button id="toggle-mode">Toggle Dark Mode</button>
+        <button id="config-button">Config Time Blocks</button>
+    </div>
     <div id="current-time">00:00:00</div>
     <div class="progress-container">
         <div id="total-progress-bar" class="block-progress-bar">
@@ -90,7 +139,7 @@
     <div id="total-time"></div>
     <div id="overwork-time"></div>
     <div id="config">
-        <input type="text" id="blocks-input" placeholder="Enter blocks (e.g., 0900-1200,1400-1700)">
+        <input type="text" id="blocks-input" placeholder="Enter blocks (e.g., 0800-1230,1415-1830,1900-2030)">
         <button onclick="saveBlocks()">Save</button>
     </div>
 
@@ -187,14 +236,37 @@
             });
             localStorage.setItem('blocks', JSON.stringify(blocks));
             updateTime();
+            toggleConfig();
+        }
+
+        function toggleDarkMode() {
+            document.documentElement.classList.toggle('dark-mode');
+            document.body.classList.toggle('dark-mode');
+            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark-mode'));
+        }
+
+        function toggleConfig() {
+            document.getElementById('config').classList.toggle('show');
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            const isDarkMode = localStorage.getItem('darkMode') === 'true';
+            if (isDarkMode) {
+                document.documentElement.classList.add('dark-mode');
+                document.body.classList.add('dark-mode');
+            }
+
+            document.getElementById('toggle-mode').addEventListener('click', toggleDarkMode);
+            document.getElementById('config-button').addEventListener('click', toggleConfig);
+
             const blocksInput = document.getElementById('blocks-input');
             const storedBlocks = JSON.parse(localStorage.getItem('blocks'));
             if (storedBlocks) {
                 blocksInput.value = storedBlocks.map(block => block.start.replace(':', '') + '-' + block.end.replace(':', '')).join(',');
+            } else {
+                toggleConfig();
             }
+
             setInterval(updateTime, 1000);
             updateTime();
         });
