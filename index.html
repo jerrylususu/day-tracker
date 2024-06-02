@@ -206,7 +206,6 @@
             }).join('');
             document.getElementById('blocks-progress').innerHTML = blocksProgressHtml;
 
-
             const elapsedTime = formatTime(elapsedWorkTime);
             const remainingTime = formatTime(totalWorkTime - elapsedWorkTime);
             document.getElementById('total-time').innerText = `(Total) Elapsed: ${elapsedTime} | Remaining: ${remainingTime}`;
@@ -223,6 +222,13 @@
 
             if (currentBlockIndex === -1) {
                 document.getElementById('block-info').classList.add('hidden');
+                const firstBlockStart = new Date(now.toDateString() + ' ' + blocks[0].start).getTime();
+                if (now.getTime() < firstBlockStart) {
+                    document.getElementById('overwork-time').innerText = '';
+                } else {
+                    const overworkTime = now.getTime() - new Date(now.toDateString() + ' ' + blocks[blocks.length - 1].end).getTime();
+                    document.getElementById('overwork-time').innerText = `Overwork Time: ${formatTime(overworkTime)}`;
+                }
             } else {
                 document.getElementById('block-info').classList.remove('hidden');
                 const start = new Date(now.toDateString() + ' ' + blocks[currentBlockIndex].start).getTime();
@@ -231,9 +237,8 @@
                 const blockElapsedTime = formatTime(now.getTime() - start);
                 const blockRemainingTime = formatTime(end - now.getTime());
                 document.getElementById('block-time').innerHTML = `(Block) Elapsed: ${blockElapsedTime} | Remaining: ${blockRemainingTime}`;
+                document.getElementById('overwork-time').innerText = '';
             }
-
-
         }
 
         function saveBlocks() {
