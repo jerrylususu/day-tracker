@@ -110,7 +110,9 @@
         }
 
         #toggle-mode,
-        #config-button {
+        #config-button,
+        #font-size-up,
+        #font-size-down {
             padding: 5px 10px;
             font-size: 14px;
             background-color: var(--progress-bg);
@@ -120,7 +122,6 @@
         }
 
         #current-time {
-            font-size: 96px;
             margin: 20px 0;
         }
     </style>
@@ -129,8 +130,10 @@
     <div class="top-buttons">
         <button id="toggle-mode">Toggle Dark Mode</button>
         <button id="config-button">Config Time Blocks</button>
+        <button id="font-size-up">Font Size +</button>
+        <button id="font-size-down">-</button>
     </div>
-    <div id="current-time">00:00:00</div>
+    <div id="current-time" style="font-size: 96px;">00:00:00</div>
     <div class="progress-container">
         <div id="total-progress-bar" class="block-progress-bar">
             <div class="progress"></div>
@@ -254,15 +257,33 @@
             document.getElementById('config').classList.toggle('show');
         }
 
+        function adjustFontSize(direction) {
+            const currentTime = document.getElementById('current-time');
+            let fontSize = parseInt(currentTime.style.fontSize);
+            if (direction === 'up') {
+                fontSize += 10;
+            } else {
+                fontSize -= 10;
+            }
+            currentTime.style.fontSize = `${fontSize}px`;
+            localStorage.setItem('currentTimeFontSize', fontSize);
+        }
+
         document.addEventListener('DOMContentLoaded', () => {
             const isDarkMode = localStorage.getItem('darkMode') === 'true';
             if (isDarkMode) {
                 document.documentElement.classList.add('dark-mode');
                 document.body.classList.add('dark-mode');
             }
+            const savedFontSize = localStorage.getItem('currentTimeFontSize');
+            if (savedFontSize) {
+                document.getElementById('current-time').style.fontSize = `${savedFontSize}px`;
+            }
 
             document.getElementById('toggle-mode').addEventListener('click', toggleDarkMode);
             document.getElementById('config-button').addEventListener('click', toggleConfig);
+            document.getElementById('font-size-up').addEventListener('click', () => adjustFontSize('up'));
+            document.getElementById('font-size-down').addEventListener('click', () => adjustFontSize('down'));
 
             const blocksInput = document.getElementById('blocks-input');
             const storedBlocks = JSON.parse(localStorage.getItem('blocks'));
