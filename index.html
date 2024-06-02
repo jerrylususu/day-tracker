@@ -1,0 +1,203 @@
+<!-- SPDX-License-Identifier: MIT -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Day Tracker</title>
+    <style>
+        body {
+            font-family: monospace;
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            min-height: 100vh;
+            margin: 0;
+        }
+
+        #current-time {
+            font-size: 80px;
+            margin: 20px 0;
+        }
+
+        .progress-container {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+
+        .block-progress-bar {
+            height: 30px;
+            background-color: #f3f3f3;
+            border: 1px solid #ccc;
+            position: relative;
+            flex-grow: 1;
+            margin: 0 5px;
+            display: flex;
+            align-items: center;
+        }
+
+        .block-progress-bar .progress {
+            height: 100%;
+            background-color: #4caf50;
+        }
+
+        .block-progress-bar .percentage {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 16px;
+        }
+
+
+        #config {
+            margin: 20px;
+        }
+
+        #config input {
+            width: 80%;
+            padding: 10px;
+            font-size: 16px;
+        }
+
+        .block-info {
+            display: flex;
+            justify-content: center;
+            margin: 10px 0;
+        }
+        .block-info > div {
+            margin: 0 10px;
+        }
+        .block-info.hidden {
+            display: none;
+        }
+
+    </style>
+</head>
+<body>
+    <div id="current-time">00:00:00</div>
+    <div class="progress-container">
+        <div id="total-progress-bar" class="block-progress-bar">
+            <div class="progress"></div>
+            <div class="percentage">0.00%</div>
+        </div>
+    </div>
+    <div class="progress-container" id="blocks-progress"></div>
+    <div class="block-info" id="block-info">
+        <div id="block-time"></div>
+    </div>
+    <div id="total-time"></div>
+    <div id="overwork-time"></div>
+    <div id="config">
+        <input type="text" id="blocks-input" placeholder="Enter blocks (e.g., 0900-1200,1400-1700)">
+        <button onclick="saveBlocks()">Save</button>
+    </div>
+
+    <script>
+        function formatTime(ms) {
+            const totalSeconds = Math.floor(ms / 1000);
+            const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
+            const minutes = Math.floor((totalSeconds % 3600) / 60).toString().padStart(2, '0');
+            const seconds = (totalSeconds % 60).toString().padStart(2, '0');
+            return `${hours}:${minutes}:${seconds}`;
+        }
+
+        function updateTime() {
+            const now = new Date();
+            const currentTime = now.toTimeString().split(' ')[0];
+            document.getElementById('current-time').innerText = currentTime;
+
+            const blocks = JSON.parse(localStorage.getItem('blocks')) || [];
+            if (blocks.length === 0) return;
+
+            const totalWorkTime = blocks.reduce((acc, block) => {
+                const start = new Date(now.toDateString() + ' ' + block.start).getTime();
+                const end = new Date(now.toDateString() + ' ' + block.end).getTime();
+                return acc + (end - start);
+            }, 0);
+
+            const elapsedWorkTime = blocks.reduce((acc, block) => {
+                const start = new Date(now.toDateString() + ' ' + block.start).getTime();
+                const end = new Date(now.toDateString() + ' ' + block.end).getTime();
+                if (now.getTime() > end) return acc + (end - start);
+                if (now.getTime() > start) return acc + (now.getTime() - start);
+                return acc;
+            }, 0);
+
+            const totalProgress = totalWorkTime !== 0 ? (elapsedWorkTime / totalWorkTime) * 100 : 0;
+            document.querySelector('#total-progress-bar .progress').style.width = `${totalProgress}%`;
+            document.querySelector('#total-progress-bar .percentage').innerText = `${totalProgress.toFixed(2)}%`;
+
+            const blocksProgressHtml = blocks.map(block => {
+                const start = new Date(now.toDateString() + ' ' + block.start).getTime();
+                const end = new Date(now.toDateString() + ' ' + block.end).getTime();
+                const blockDuration = end - start;
+                let blockProgress = 0;
+                if (now.getTime() > end) {
+                    blockProgress = 100;
+                } else if (now.getTime() > start) {
+                    blockProgress = ((now.getTime() - start) / blockDuration) * 100;
+                }
+                const blockWidthPercentage = (blockDuration / totalWorkTime) * 100;
+                return `
+                    <div class="block-progress-bar" style="width: ${blockWidthPercentage}%">
+                        <div class="progress" style="width: ${blockProgress}%"></div>
+                        <div class="percentage">${blockProgress.toFixed(2)}%</div>
+                    </div>
+                `;
+            }).join('');
+            document.getElementById('blocks-progress').innerHTML = blocksProgressHtml;
+
+
+            const elapsedTime = formatTime(elapsedWorkTime);
+            const remainingTime = formatTime(totalWorkTime - elapsedWorkTime);
+            document.getElementById('total-time').innerText = `(Total) Elapsed: ${elapsedTime} | Remaining: ${remainingTime}`;
+
+            let currentBlockIndex = -1;
+            for (let i = 0; i < blocks.length; i++) {
+                const start = new Date(now.toDateString() + ' ' + blocks[i].start).getTime();
+                const end = new Date(now.toDateString() + ' ' + blocks[i].end).getTime();
+                if (now.getTime() >= start && now.getTime() <= end) {
+                    currentBlockIndex = i;
+                    break;
+                }
+            }
+
+            if (currentBlockIndex === -1) {
+                document.getElementById('block-info').classList.add('hidden');
+            } else {
+                document.getElementById('block-info').classList.remove('hidden');
+                const start = new Date(now.toDateString() + ' ' + blocks[currentBlockIndex].start).getTime();
+                const end = new Date(now.toDateString() + ' ' + blocks[currentBlockIndex].end).getTime();
+                const blockDuration = end - start;
+                const blockElapsedTime = formatTime(now.getTime() - start);
+                const blockRemainingTime = formatTime(end - now.getTime());
+                document.getElementById('block-time').innerHTML = `(Block) Elapsed: ${blockElapsedTime} | Remaining: ${blockRemainingTime}`;
+            }
+
+
+        }
+
+        function saveBlocks() {
+            const blocksInput = document.getElementById('blocks-input').value;
+            const blocks = blocksInput.split(',').map(block => {
+                const [start, end] = block.split('-');
+                return { start: start.slice(0, 2) + ':' + start.slice(2), end: end.slice(0, 2) + ':' + end.slice(2) };
+            });
+            localStorage.setItem('blocks', JSON.stringify(blocks));
+            updateTime();
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            const blocksInput = document.getElementById('blocks-input');
+            const storedBlocks = JSON.parse(localStorage.getItem('blocks'));
+            if (storedBlocks) {
+                blocksInput.value = storedBlocks.map(block => block.start.replace(':', '') + '-' + block.end.replace(':', '')).join(',');
+            }
+            setInterval(updateTime, 1000);
+            updateTime();
+        });
+    </script>
+</body>
+</html>
