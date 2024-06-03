@@ -4,5 +4,5 @@ A simple page that tracks the progress over a typical workday. Bulit using GPT-4
 
 [Try it here](https://nekonull.me/day-tracker/)
 
+![image](https://github.com/jerrylususu/day-tracker/assets/17522475/9a0c5429-f513-42cc-82e0-083f028fdbcf)
 
-![image](https://github.com/jerrylususu/day-tracker/assets/17522475/d22e9ed4-7db2-45ea-a69b-cbb85dfd52a4)
