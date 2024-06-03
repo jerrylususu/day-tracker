@@ -222,12 +222,12 @@
 
             if (currentBlockIndex === -1) {
                 document.getElementById('block-info').classList.add('hidden');
-                const firstBlockStart = new Date(now.toDateString() + ' ' + blocks[0].start).getTime();
-                if (now.getTime() < firstBlockStart) {
-                    document.getElementById('overwork-time').innerText = '';
-                } else {
-                    const overworkTime = now.getTime() - new Date(now.toDateString() + ' ' + blocks[blocks.length - 1].end).getTime();
+                const lastBlockEnd = new Date(now.toDateString() + ' ' + blocks[blocks.length - 1].end).getTime();
+                if (now.getTime() > lastBlockEnd) {
+                    const overworkTime = now.getTime() - lastBlockEnd;
                     document.getElementById('overwork-time').innerText = `Overwork Time: ${formatTime(overworkTime)}`;
+                } else {
+                    document.getElementById('overwork-time').innerText = '';
                 }
             } else {
                 document.getElementById('block-info').classList.remove('hidden');
