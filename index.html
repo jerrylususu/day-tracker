@@ -1,4 +1,3 @@
-<!-- SPDX-License-Identifier: MIT -->
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -85,55 +84,71 @@
         }
 
         #config {
-            margin: 20px;
+            margin: 20px auto;
             display: none;
+            background-color: var(--config-bg);
+            color: var(--config-text);
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+            max-width: 500px;
         }
 
         #config.show {
             display: block;
         }
 
-        #config input {
-            width: 80%;
+        #config input[type="text"] {
+            width: 100%;
             padding: 10px;
             font-size: 16px;
+            margin: 10px 0;
             background-color: var(--config-bg);
             color: var(--config-text);
+            border: 1px solid var(--text-color);
+            border-radius: 5px;
         }
 
-        .top-buttons {
+        #config .setting {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin: 10px 0;
+        }
+
+        #config .setting label {
+            flex: 1;
+            text-align: left;
+        }
+
+        #config .setting input[type="checkbox"],
+        #config .setting input[type="number"] {
+            width: auto;
+        }
+
+        #config-button {
             position: absolute;
             top: 10px;
             right: 10px;
-            display: flex;
-            gap: 10px;
-        }
-
-        #toggle-mode,
-        #config-button,
-        #font-size-up,
-        #font-size-down {
             padding: 5px 10px;
             font-size: 14px;
             background-color: var(--progress-bg);
             color: var(--text-color);
             border: none;
             cursor: pointer;
+            border-radius: 5px;
         }
 
-        #current-time {
-            margin: 20px 0;
+        #motto {
+            font-size: 24px;
+            margin: 10px 0;
         }
     </style>
 </head>
 <body>
-    <div class="top-buttons">
-        <button id="toggle-mode">Toggle Dark Mode</button>
-        <button id="config-button">Config Time Blocks</button>
-        <button id="font-size-up">Font Size +</button>
-        <button id="font-size-down">-</button>
-    </div>
-    <div id="current-time" style="font-size: 96px;">00:00:00</div>
+    <button id="config-button">Config</button>
+    <div id="motto"></div>
+    <div id="current-time">00:00:00</div>
     <div class="progress-container">
         <div id="total-progress-bar" class="block-progress-bar">
             <div class="progress"></div>
@@ -148,10 +163,40 @@
     <div id="overwork-time"></div>
     <div id="config">
         <input type="text" id="blocks-input" placeholder="Enter blocks (e.g., 0800-1230,1415-1830,1900-2030)">
-        <button onclick="saveBlocks()">Save</button>
+        <input type="text" id="motto-input" placeholder="Enter your motto">
+        <div class="setting">
+            <label for="dark-mode-toggle">Dark Mode:</label>
+            <input type="checkbox" id="dark-mode-toggle">
+        </div>
+        <div class="setting">
+            <label for="time-font-size-input">Time Font Size:</label>
+            <input type="number" id="time-font-size-input" min="12" max="100" step="2">
+        </div>
+        <div class="setting">
+            <label for="motto-font-size-input">Motto Font Size:</label>
+            <input type="number" id="motto-font-size-input" min="12" max="100" step="2">
+        </div>
     </div>
 
     <script>
+        let config = {
+            blocks: [],
+            motto: '',
+            darkMode: false,
+            fontSize: 48
+        };
+
+        function loadConfig() {
+            const savedConfig = localStorage.getItem('day-tracker');
+            if (savedConfig) {
+                config = JSON.parse(savedConfig);
+            }
+        }
+
+        function saveConfig() {
+            localStorage.setItem('day-tracker', JSON.stringify(config));
+        }
+
         function formatTime(ms) {
             const totalSeconds = Math.floor(ms / 1000);
             const hours = Math.floor(totalSeconds / 3600).toString().padStart(2, '0');
@@ -165,16 +210,15 @@
             const currentTime = now.toTimeString().split(' ')[0];
             document.getElementById('current-time').innerText = currentTime;
 
-            const blocks = JSON.parse(localStorage.getItem('blocks')) || [];
-            if (blocks.length === 0) return;
+            if (config.blocks.length === 0) return;
 
-            const totalWorkTime = blocks.reduce((acc, block) => {
+            const totalWorkTime = config.blocks.reduce((acc, block) => {
                 const start = new Date(now.toDateString() + ' ' + block.start).getTime();
                 const end = new Date(now.toDateString() + ' ' + block.end).getTime();
                 return acc + (end - start);
             }, 0);
 
-            const elapsedWorkTime = blocks.reduce((acc, block) => {
+            const elapsedWorkTime = config.blocks.reduce((acc, block) => {
                 const start = new Date(now.toDateString() + ' ' + block.start).getTime();
                 const end = new Date(now.toDateString() + ' ' + block.end).getTime();
                 if (now.getTime() > end) return acc + (end - start);
@@ -186,7 +230,7 @@
             document.querySelector('#total-progress-bar .progress').style.width = `${totalProgress}%`;
             document.querySelector('#total-progress-bar .percentage').innerText = `${totalProgress.toFixed(2)}%`;
 
-            const blocksProgressHtml = blocks.map(block => {
+            const blocksProgressHtml = config.blocks.map(block => {
                 const start = new Date(now.toDateString() + ' ' + block.start).getTime();
                 const end = new Date(now.toDateString() + ' ' + block.end).getTime();
                 const blockDuration = end - start;
@@ -211,9 +255,9 @@
             document.getElementById('total-time').innerText = `(Total) Elapsed: ${elapsedTime} | Remaining: ${remainingTime}`;
 
             let currentBlockIndex = -1;
-            for (let i = 0; i < blocks.length; i++) {
-                const start = new Date(now.toDateString() + ' ' + blocks[i].start).getTime();
-                const end = new Date(now.toDateString() + ' ' + blocks[i].end).getTime();
+            for (let i = 0; i < config.blocks.length; i++) {
+                const start = new Date(now.toDateString() + ' ' + config.blocks[i].start).getTime();
+                const end = new Date(now.toDateString() + ' ' + config.blocks[i].end).getTime();
                 if (now.getTime() >= start && now.getTime() <= end) {
                     currentBlockIndex = i;
                     break;
@@ -222,7 +266,7 @@
 
             if (currentBlockIndex === -1) {
                 document.getElementById('block-info').classList.add('hidden');
-                const lastBlockEnd = new Date(now.toDateString() + ' ' + blocks[blocks.length - 1].end).getTime();
+                const lastBlockEnd = new Date(now.toDateString() + ' ' + config.blocks[config.blocks.length - 1].end).getTime();
                 if (now.getTime() > lastBlockEnd) {
                     const overworkTime = now.getTime() - lastBlockEnd;
                     document.getElementById('overwork-time').innerText = `Overwork Time: ${formatTime(overworkTime)}`;
@@ -231,9 +275,8 @@
                 }
             } else {
                 document.getElementById('block-info').classList.remove('hidden');
-                const start = new Date(now.toDateString() + ' ' + blocks[currentBlockIndex].start).getTime();
-                const end = new Date(now.toDateString() + ' ' + blocks[currentBlockIndex].end).getTime();
-                const blockDuration = end - start;
+                const start = new Date(now.toDateString() + ' ' + config.blocks[currentBlockIndex].start).getTime();
+                const end = new Date(now.toDateString() + ' ' + config.blocks[currentBlockIndex].end).getTime();
                 const blockElapsedTime = formatTime(now.getTime() - start);
                 const blockRemainingTime = formatTime(end - now.getTime());
                 document.getElementById('block-time').innerHTML = `(Block) Elapsed: ${blockElapsedTime} | Remaining: ${blockRemainingTime}`;
@@ -241,62 +284,59 @@
             }
         }
 
-        function saveBlocks() {
+        function updateConfig() {
             const blocksInput = document.getElementById('blocks-input').value;
-            const blocks = blocksInput.split(',').map(block => {
+            config.blocks = blocksInput.split(',').map(block => {
                 const [start, end] = block.split('-');
                 return { start: start.slice(0, 2) + ':' + start.slice(2), end: end.slice(0, 2) + ':' + end.slice(2) };
             });
-            localStorage.setItem('blocks', JSON.stringify(blocks));
-            updateTime();
-            toggleConfig();
-        }
 
-        function toggleDarkMode() {
-            document.documentElement.classList.toggle('dark-mode');
-            document.body.classList.toggle('dark-mode');
-            localStorage.setItem('darkMode', document.documentElement.classList.contains('dark-mode'));
+            config.motto = document.getElementById('motto-input').value;
+            document.getElementById('motto').innerText = config.motto;
+
+            config.darkMode = document.getElementById('dark-mode-toggle').checked;
+            document.documentElement.classList.toggle('dark-mode', config.darkMode);
+
+            config.timeFontSize = document.getElementById('time-font-size-input').value;
+            document.getElementById('current-time').style.fontSize = `${config.timeFontSize}px`;
+
+            config.mottoFontSize = document.getElementById('motto-font-size-input').value;
+            document.getElementById('motto').style.fontSize = `${config.mottoFontSize}px`;
+
+            saveConfig();
+            updateTime();
         }
 
         function toggleConfig() {
             document.getElementById('config').classList.toggle('show');
         }
 
-        function adjustFontSize(direction) {
-            const currentTime = document.getElementById('current-time');
-            let fontSize = parseInt(currentTime.style.fontSize);
-            if (direction === 'up') {
-                fontSize += 10;
-            } else {
-                fontSize -= 10;
-            }
-            currentTime.style.fontSize = `${fontSize}px`;
-            localStorage.setItem('currentTimeFontSize', fontSize);
-        }
-
         document.addEventListener('DOMContentLoaded', () => {
-            const isDarkMode = localStorage.getItem('darkMode') === 'true';
-            if (isDarkMode) {
-                document.documentElement.classList.add('dark-mode');
-                document.body.classList.add('dark-mode');
-            }
-            const savedFontSize = localStorage.getItem('currentTimeFontSize');
-            if (savedFontSize) {
-                document.getElementById('current-time').style.fontSize = `${savedFontSize}px`;
-            }
+            loadConfig();
 
-            document.getElementById('toggle-mode').addEventListener('click', toggleDarkMode);
-            document.getElementById('config-button').addEventListener('click', toggleConfig);
-            document.getElementById('font-size-up').addEventListener('click', () => adjustFontSize('up'));
-            document.getElementById('font-size-down').addEventListener('click', () => adjustFontSize('down'));
+            document.getElementById('dark-mode-toggle').checked = config.darkMode;
+            document.documentElement.classList.toggle('dark-mode', config.darkMode);
+
+            document.getElementById('time-font-size-input').value = config.timeFontSize;
+            document.getElementById('current-time').style.fontSize = `${config.timeFontSize}px`;
+
+            document.getElementById('motto-font-size-input').value = config.mottoFontSize;
+            document.getElementById('motto').style.fontSize = `${config.mottoFontSize}px`;
 
             const blocksInput = document.getElementById('blocks-input');
-            const storedBlocks = JSON.parse(localStorage.getItem('blocks'));
-            if (storedBlocks) {
-                blocksInput.value = storedBlocks.map(block => block.start.replace(':', '') + '-' + block.end.replace(':', '')).join(',');
-            } else {
-                toggleConfig();
-            }
+            blocksInput.value = config.blocks.map(block => block.start.replace(':', '') + '-' + block.end.replace(':', '')).join(',');
+
+            document.getElementById('motto-input').value = config.motto;
+            document.getElementById('motto').innerText = config.motto;
+
+            document.getElementById('config-button').addEventListener('click', toggleConfig);
+            
+            // Add event listeners for auto-save
+            document.getElementById('blocks-input').addEventListener('input', updateConfig);
+            document.getElementById('motto-input').addEventListener('input', updateConfig);
+            document.getElementById('dark-mode-toggle').addEventListener('change', updateConfig);
+            document.getElementById('time-font-size-input').addEventListener('input', updateConfig);
+            document.getElementById('motto-font-size-input').addEventListener('input', updateConfig);
 
             setInterval(updateTime, 1000);
             updateTime();
