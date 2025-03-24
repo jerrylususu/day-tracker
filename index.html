@@ -13,6 +13,10 @@
             --progress-color: #4caf50;
             --config-bg: #fff;
             --config-text: #000;
+            --bg-opacity: 1;
+            --bg-image: none;
+            --ui-opacity: 1;
+            --ui-width: 800px;
         }
 
         :root.dark-mode {
@@ -28,23 +32,113 @@
             font-family: monospace;
             text-align: center;
             background-color: var(--bg-color);
+            background-image: none;
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
             color: var(--text-color);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            min-height: 100vh;
             margin: 0;
+            min-height: 100vh;
+            position: relative;
+            overflow: hidden;
         }
 
-        #current-time {
-            font-size: 48px;
-            margin: 20px 0;
+        #ui-container {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            cursor: move;
+            opacity: var(--ui-opacity);
+            width: var(--ui-width);
+            max-width: 90vw;
+        }
+
+        #reset-position {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            padding: 5px 10px;
+            font-size: 14px;
+            background-color: var(--progress-bg);
+            color: var(--text-color);
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+            opacity: var(--ui-opacity);
+        }
+
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-image: var(--bg-image);
+            background-size: cover;
+            background-position: center;
+            background-repeat: no-repeat;
+            opacity: var(--bg-opacity);
+            z-index: -1;
         }
 
         .progress-container {
             display: flex;
             justify-content: center;
-            margin: 10px 0;
+            margin: 5px auto;
+            background-color: var(--bg-color);
+            padding: 5px;
+            border-radius: 5px;
+            width: 100%;
+        }
+
+        #current-time {
+            font-size: 48px;
+            margin: 10px auto;
+            background-color: var(--bg-color);
+            padding: 5px 15px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        .block-info {
+            display: flex;
+            justify-content: center;
+            margin: 5px auto;
+            background-color: var(--bg-color);
+            padding: 5px 15px;
+            border-radius: 5px;
+            max-width: fit-content;
+        }
+
+        .block-info>div {
+            margin: 0 10px;
+        }
+
+        .block-info.hidden {
+            display: none;
+        }
+
+        #motto {
+            font-size: 24px;
+            margin: 5px auto;
+            background-color: var(--bg-color);
+            padding: 5px 15px;
+            border-radius: 5px;
+            display: inline-block;
+        }
+
+        #total-time, #overwork-time {
+            background-color: var(--bg-color);
+            padding: 5px 15px;
+            border-radius: 5px;
+            margin: 5px auto;
+            max-width: fit-content;
+            display: inline-block;
         }
 
         .block-progress-bar {
@@ -68,20 +162,6 @@
             left: 50%;
             transform: translateX(-50%);
             font-size: 16px;
-        }
-
-        .block-info {
-            display: flex;
-            justify-content: center;
-            margin: 10px 0;
-        }
-
-        .block-info>div {
-            margin: 0 10px;
-        }
-
-        .block-info.hidden {
-            display: none;
         }
 
         #config {
@@ -139,30 +219,28 @@
             cursor: pointer;
             border-radius: 5px;
         }
-
-        #motto {
-            font-size: 24px;
-            margin: 10px 0;
-        }
     </style>
 </head>
 
 <body>
     <button id="config-button">Config</button>
-    <div id="motto"></div>
-    <div id="current-time">00:00:00</div>
-    <div class="progress-container">
-        <div id="total-progress-bar" class="block-progress-bar">
-            <div class="progress"></div>
-            <div class="percentage">0.00%</div>
+    <div id="ui-container">
+        <div id="motto"></div>
+        <div id="current-time">00:00:00</div>
+        <div class="progress-container">
+            <div id="total-progress-bar" class="block-progress-bar">
+                <div class="progress"></div>
+                <div class="percentage">0.00%</div>
+            </div>
         </div>
+        <div class="progress-container" id="blocks-progress"></div>
+        <div class="block-info" id="block-info">
+            <div id="block-time"></div>
+        </div>
+        <div id="total-time"></div>
+        <div id="overwork-time"></div>
     </div>
-    <div class="progress-container" id="blocks-progress"></div>
-    <div class="block-info" id="block-info">
-        <div id="block-time"></div>
-    </div>
-    <div id="total-time"></div>
-    <div id="overwork-time"></div>
+    <button id="reset-position">Reset Position</button>
     <div id="config">
         <input type="text" id="blocks-input" placeholder="Enter blocks (e.g., 0800-1230,1415-1830,1900-2030)">
         <input type="text" id="motto-input" placeholder="Enter your motto">
@@ -177,6 +255,22 @@
         <div class="setting">
             <label for="motto-font-size-input">Motto Font Size:</label>
             <input type="number" id="motto-font-size-input" min="12" max="100" step="2">
+        </div>
+        <div class="setting">
+            <label for="bg-image-input">Background Image:</label>
+            <input type="file" id="bg-image-input" accept="image/*">
+        </div>
+        <div class="setting">
+            <label for="bg-opacity">Background Opacity:</label>
+            <input type="range" id="bg-opacity" min="0" max="1" step="0.05" value="1">
+        </div>
+        <div class="setting">
+            <label for="ui-opacity">UI Transparency:</label>
+            <input type="range" id="ui-opacity" min="0" max="1" step="0.05" value="1">
+        </div>
+        <div class="setting">
+            <label for="ui-width">UI Width (px):</label>
+            <input type="number" id="ui-width" min="300" max="2000" step="50" value="800">
         </div>
     </div>
 
@@ -194,13 +288,61 @@
             ],
             motto: 'hello world',
             darkMode: false,
-            fontSize: 48
+            timeFontSize: 48,
+            mottoFontSize: 24,
+            bgImage: '',
+            bgOpacity: 1,
+            uiOpacity: 1,
+            uiWidth: 800,
+            uiPosition: { x: 50, y: 50 } // percentage of viewport
         };
 
         function loadConfig() {
             const savedConfig = localStorage.getItem('day-tracker');
             if (savedConfig) {
-                config = JSON.parse(savedConfig);
+                const parsed = JSON.parse(savedConfig);
+                config = { ...config, ...parsed };
+            }
+        }
+
+        function updateConfig() {
+            document.documentElement.classList.toggle('dark-mode', config.darkMode);
+            
+            document.getElementById('current-time').style.fontSize = `${config.timeFontSize}px`;
+            document.getElementById('motto').style.fontSize = `${config.mottoFontSize}px`;
+            document.getElementById('motto').innerText = config.motto;
+
+            document.documentElement.style.setProperty('--ui-opacity', config.uiOpacity);
+            document.documentElement.style.setProperty('--ui-width', `${config.uiWidth}px`);
+
+            if (config.bgImage) {
+                document.documentElement.style.setProperty('--bg-image', `url(${config.bgImage})`);
+                document.body.style.backgroundImage = 'none';
+            } else {
+                document.documentElement.style.setProperty('--bg-image', 'none');
+                document.body.style.backgroundImage = 'none';
+            }
+
+            document.documentElement.style.setProperty('--bg-opacity', config.bgOpacity);
+
+            // Set position if saved
+            if (config.uiPosition && config.uiPosition.x !== 50 && config.uiPosition.y !== 50) {
+                const container = document.getElementById('ui-container');
+                const viewportWidth = window.innerWidth;
+                const viewportHeight = window.innerHeight;
+                
+                // Convert percentage to pixels
+                const left = (config.uiPosition.x * viewportWidth) / 100;
+                const top = (config.uiPosition.y * viewportHeight) / 100;
+                
+                // Calculate offset from center
+                const rect = container.getBoundingClientRect();
+                xOffset = left - viewportWidth / 2;
+                yOffset = top - viewportHeight / 2;
+                currentX = xOffset;
+                currentY = yOffset;
+                
+                container.style.transform = `translate(${xOffset}px, ${yOffset}px)`;
             }
         }
 
@@ -295,27 +437,76 @@
             }
         }
 
-        function updateConfig() {
-            const blocksInput = document.getElementById('blocks-input').value;
-            config.blocks = blocksInput.split(',').map(block => {
-                const [start, end] = block.trim().split('-').map(time => time.trim());
-                return { start: start.slice(0, 2) + ':' + start.slice(2), end: end.slice(0, 2) + ':' + end.slice(2) };
-            });
+        // Dragging functionality
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
 
-            config.motto = document.getElementById('motto-input').value;
-            document.getElementById('motto').innerText = config.motto;
+        function dragStart(e) {
+            if (e.type === "touchstart") {
+                initialX = e.touches[0].clientX - xOffset;
+                initialY = e.touches[0].clientY - yOffset;
+            } else {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+            }
+            
+            if (e.target.closest('#ui-container')) {
+                isDragging = true;
+            }
+        }
 
-            config.darkMode = document.getElementById('dark-mode-toggle').checked;
-            document.documentElement.classList.toggle('dark-mode', config.darkMode);
-
-            config.timeFontSize = document.getElementById('time-font-size-input').value;
-            document.getElementById('current-time').style.fontSize = `${config.timeFontSize}px`;
-
-            config.mottoFontSize = document.getElementById('motto-font-size-input').value;
-            document.getElementById('motto').style.fontSize = `${config.mottoFontSize}px`;
-
+        function dragEnd(e) {
+            initialX = currentX;
+            initialY = currentY;
+            isDragging = false;
+            
+            // Save position as percentage of viewport
+            const container = document.getElementById('ui-container');
+            const rect = container.getBoundingClientRect();
+            const viewportWidth = window.innerWidth;
+            const viewportHeight = window.innerHeight;
+            
+            config.uiPosition = {
+                x: (rect.left / viewportWidth) * 100,
+                y: (rect.top / viewportHeight) * 100
+            };
             saveConfig();
-            updateTime();
+        }
+
+        function drag(e) {
+            if (isDragging) {
+                e.preventDefault();
+                
+                if (e.type === "touchmove") {
+                    currentX = e.touches[0].clientX - initialX;
+                    currentY = e.touches[0].clientY - initialY;
+                } else {
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                }
+
+                xOffset = currentX;
+                yOffset = currentY;
+
+                const container = document.getElementById('ui-container');
+                container.style.transform = `translate(${currentX}px, ${currentY}px)`;
+            }
+        }
+
+        function resetPosition() {
+            const container = document.getElementById('ui-container');
+            xOffset = 0;
+            yOffset = 0;
+            currentX = 0;
+            currentY = 0;
+            container.style.transform = 'translate(-50%, -50%)';
+            config.uiPosition = { x: 50, y: 50 };
+            saveConfig();
         }
 
         function toggleConfig() {
@@ -323,22 +514,57 @@
         }
 
         document.addEventListener('DOMContentLoaded', () => {
+            // First load the config
             loadConfig();
 
+            // Initialize UI controls with current values
             document.getElementById('dark-mode-toggle').checked = config.darkMode;
-            document.documentElement.classList.toggle('dark-mode', config.darkMode);
-
-            document.getElementById('time-font-size-input').value = config.timeFontSize;
-            document.getElementById('current-time').style.fontSize = `${config.timeFontSize}px`;
-
-            document.getElementById('motto-font-size-input').value = config.mottoFontSize;
-            document.getElementById('motto').style.fontSize = `${config.mottoFontSize}px`;
-
+            document.getElementById('bg-opacity').value = config.bgOpacity;
+            document.getElementById('ui-opacity').value = config.uiOpacity;
+            document.getElementById('ui-width').value = config.uiWidth;
+            
             const blocksInput = document.getElementById('blocks-input');
             blocksInput.value = config.blocks.map(block => block.start.replace(':', '') + '-' + block.end.replace(':', '')).join(',');
 
             document.getElementById('motto-input').value = config.motto;
             document.getElementById('motto').innerText = config.motto;
+
+            document.getElementById('time-font-size-input').value = config.timeFontSize;
+            document.getElementById('motto-font-size-input').value = config.mottoFontSize;
+
+            // Now apply the config after DOM elements are ready
+            updateConfig();
+
+            document.getElementById('bg-image-input').addEventListener('change', (e) => {
+                const file = e.target.files[0];
+                if (file) {
+                    const reader = new FileReader();
+                    reader.onload = (e) => {
+                        config.bgImage = e.target.result;
+                        saveConfig();
+                        updateConfig();
+                    };
+                    reader.readAsDataURL(file);
+                }
+            });
+            
+            document.getElementById('bg-opacity').addEventListener('input', (e) => {
+                config.bgOpacity = parseFloat(e.target.value);
+                saveConfig();
+                updateConfig();
+            });
+
+            document.getElementById('ui-opacity').addEventListener('input', (e) => {
+                config.uiOpacity = parseFloat(e.target.value);
+                saveConfig();
+                updateConfig();
+            });
+
+            document.getElementById('ui-width').addEventListener('change', (e) => {
+                config.uiWidth = parseInt(e.target.value);
+                saveConfig();
+                updateConfig();
+            });
 
             document.getElementById('config-button').addEventListener('click', toggleConfig);
 
@@ -348,6 +574,17 @@
             document.getElementById('dark-mode-toggle').addEventListener('change', updateConfig);
             document.getElementById('time-font-size-input').addEventListener('input', updateConfig);
             document.getElementById('motto-font-size-input').addEventListener('input', updateConfig);
+
+            // Add drag event listeners
+            const container = document.getElementById('ui-container');
+            container.addEventListener("touchstart", dragStart, false);
+            container.addEventListener("touchend", dragEnd, false);
+            container.addEventListener("touchmove", drag, false);
+            container.addEventListener("mousedown", dragStart, false);
+            document.addEventListener("mousemove", drag, false);
+            document.addEventListener("mouseup", dragEnd, false);
+
+            document.getElementById('reset-position').addEventListener('click', resetPosition);
 
             setInterval(updateTime, 1000);
             updateTime();
